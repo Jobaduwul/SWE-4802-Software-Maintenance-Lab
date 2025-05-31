@@ -12,21 +12,35 @@ public class TAdapter extends KeyAdapter {
 
     @Override
     public void keyPressed(KeyEvent e) {
+        if (board.directionChanged) return; // ← Fix here
+
         int key = e.getKeyCode();
-        Direction dir = board.getDirection();
+        Direction current = board.getDirection(); // ← Use getter
 
         switch (key) {
             case KeyEvent.VK_LEFT:
-                if (dir != Direction.RIGHT) board.setDirection(Direction.LEFT);
+                if (current != Direction.RIGHT) {
+                    board.setDirection(Direction.LEFT);
+                    board.directionChanged = true;
+                }
                 break;
             case KeyEvent.VK_RIGHT:
-                if (dir != Direction.LEFT) board.setDirection(Direction.RIGHT);
+                if (current != Direction.LEFT) {
+                    board.setDirection(Direction.RIGHT);
+                    board.directionChanged = true;
+                }
                 break;
             case KeyEvent.VK_UP:
-                if (dir != Direction.DOWN) board.setDirection(Direction.UP);
+                if (current != Direction.DOWN) {
+                    board.setDirection(Direction.UP);
+                    board.directionChanged = true;
+                }
                 break;
             case KeyEvent.VK_DOWN:
-                if (dir != Direction.UP) board.setDirection(Direction.DOWN);
+                if (current != Direction.UP) {
+                    board.setDirection(Direction.DOWN);
+                    board.directionChanged = true;
+                }
                 break;
         }
     }

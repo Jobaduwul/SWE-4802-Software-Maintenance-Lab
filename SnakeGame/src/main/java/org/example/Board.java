@@ -14,11 +14,12 @@ import static org.example.GameConstants.*;
 public class Board extends JPanel implements ActionListener {
 
     private List<Obstacle> obstacles = new ArrayList<>();
-
     private final int NUM_OBSTACLES = 10;
+    protected boolean directionChanged = false;
+
 
     private Image obstacleImg = GameImages.loadImage("/ob" +
-            "stacle.png"); // Create this image file
+            "stacle.png");
     private List<SnakeSegment> snake;
 
     private Direction direction = Direction.RIGHT;
@@ -210,6 +211,8 @@ public class Board extends JPanel implements ActionListener {
             checkApple();
             checkCollision();
             move();
+            directionChanged = false;
+
         }
         repaint();
     }
