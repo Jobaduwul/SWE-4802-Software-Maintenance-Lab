@@ -1,5 +1,7 @@
 package org.example;
 
+import java.util.HashSet;
+import java.util.Set;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -11,6 +13,9 @@ import static org.example.GameConstants.*;
 
 public class Board extends JPanel implements ActionListener {
 
+    private List<Obstacle> obstacles = new ArrayList<>();
+    private final int NUM_OBSTACLES = 10;
+    private Image obstacleImg = GameImages.loadImage("/obstacle.png"); // Create this image file
     private List<SnakeSegment> snake;
     private Direction direction = Direction.RIGHT;
     private boolean inGame = true;
@@ -42,9 +47,66 @@ public class Board extends JPanel implements ActionListener {
         }
 
         apple = new Apple();
+        generateObstacles(); // <<--- Add this
         timer = new Timer(DELAY, this);
         timer.start();
     }
+
+    private void generateObstacles() {
+        Set<String> used = new HashSet<>();
+        for (SnakeSegment s : snake) used.add(s.x + "," + s.y);
+        // Shapes list, you can add more shapes here
+        List<List<Point>> shapes = List.of(
+                List.of(new Point(0, 0), new Point(DOT_SIZE, 0), new Point(0, DOT_SIZE)),             // L shape
+                List.of(new Point(0, 0), new Point(-DOT_SIZE, 0), new Point(0, DOT_SIZE)),            // reverse L
+                List.of(new Point(0, 0), new Point(0, DOT_SIZE), new Point(0, 2 * DOT_SIZE)),         // vertical line
+                List.of(new Point(0, 0), new Point(DOT_SIZE, 0), new Point(2 * DOT_SIZE, 0)),         // horizontal line
+                List.of(new Point(0, 0), new Point(DOT_SIZE, 0), new Point(0, DOT_SIZE), new Point(DOT_SIZE, DOT_SIZE)) // square
+        );
+
+        int attempts = 0;
+        int shapesPlaced = 0;
+
+        while (shapesPlaced < NUM_OBSTACLES && attempts < 100) {
+            attempts++;
+
+            List<Point> shape = shapes.get((int) (Math.random() * shapes.size()));
+
+            int anchorX = ((int) (Math.random() * RAND_POS)) * DOT_SIZE;
+            int anchorY = ((int) (Math.random() * RAND_POS)) * DOT_SIZE;
+
+            List<Point> absolutePoints = new ArrayList<>();
+            boolean valid = true;
+
+            for (Point p : shape) {
+                int x = anchorX + p.x;
+                int y = anchorY + p.y;
+
+                if (x < 0 || y < 0 || x >= B_WIDTH || y >= B_HEIGHT) {
+                    valid = false;
+                    break;
+                }
+
+                String key = x + "," + y;
+                if (used.contains(key) || (x == apple.getX() && y == apple.getY())) {
+                    valid = false;
+                    break;
+                }
+
+                absolutePoints.add(new Point(x, y));
+            }
+
+            if (valid) {
+                for (Point pt : absolutePoints) {
+                    obstacles.add(new Obstacle(pt.x, pt.y));
+                    used.add(pt.x + "," + pt.y);
+                }
+                shapesPlaced++;
+            }
+        }
+    }
+
+
 
     @Override
     protected void paintComponent(Graphics g) {
@@ -54,6 +116,9 @@ public class Board extends JPanel implements ActionListener {
             for (int i = 0; i < snake.size(); i++) {
                 SnakeSegment s = snake.get(i);
                 g.drawImage(i == 0 ? head : ball, s.x, s.y, this);
+            }
+            for (Obstacle obs : obstacles) {
+                g.drawImage(obstacleImg, obs.getX(), obs.getY(), this);
             }
             Toolkit.getDefaultToolkit().sync();
         } else {
@@ -104,6 +169,13 @@ public class Board extends JPanel implements ActionListener {
 
         if (head.x < 0 || head.x >= B_WIDTH || head.y < 0 || head.y >= B_HEIGHT) {
             inGame = false;
+        }
+
+        for (Obstacle obs : obstacles) {
+            if (head.x == obs.getX() && head.y == obs.getY()) {
+                inGame = false;
+                break;
+            }
         }
 
         if (!inGame) timer.stop();
