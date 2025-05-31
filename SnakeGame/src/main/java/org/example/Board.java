@@ -14,11 +14,23 @@ import static org.example.GameConstants.*;
 public class Board extends JPanel implements ActionListener {
 
     private List<Obstacle> obstacles = new ArrayList<>();
+
     private final int NUM_OBSTACLES = 10;
-    private Image obstacleImg = GameImages.loadImage("/obstacle.png"); // Create this image file
+
+    private Image obstacleImg = GameImages.loadImage("/ob" +
+            "stacle.png"); // Create this image file
     private List<SnakeSegment> snake;
+
     private Direction direction = Direction.RIGHT;
+
     private boolean inGame = true;
+
+    private Score score = new Score();
+    private static final int SCORE_OFFSET_X = 70;
+    private static final int SCORE_OFFSET_Y = 10;
+
+
+
 
     private Apple apple;
     private Timer timer;
@@ -46,6 +58,7 @@ public class Board extends JPanel implements ActionListener {
             snake.add(new SnakeSegment(50 - i * DOT_SIZE, 50));
         }
 
+        score.reset();
         apple = new Apple();
         generateObstacles(); // <<--- Add this
         timer = new Timer(DELAY, this);
@@ -120,6 +133,11 @@ public class Board extends JPanel implements ActionListener {
             for (Obstacle obs : obstacles) {
                 g.drawImage(obstacleImg, obs.getX(), obs.getY(), this);
             }
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Arial", Font.PLAIN, 14));
+            String scoreText = "Score: " + score.getScore();
+            g.drawString(scoreText, B_WIDTH - SCORE_OFFSET_X, B_HEIGHT - SCORE_OFFSET_Y);
+
             Toolkit.getDefaultToolkit().sync();
         } else {
             gameOver(g);
@@ -128,21 +146,25 @@ public class Board extends JPanel implements ActionListener {
 
     private void gameOver(Graphics g) {
         String msg = "Game Over";
+        String scoreMsg = "Final Score: " + score.getScore();
         Font small = new Font("Helvetica", Font.BOLD, 14);
         FontMetrics metr = getFontMetrics(small);
 
         g.setColor(Color.white);
         g.setFont(small);
         g.drawString(msg, (B_WIDTH - metr.stringWidth(msg)) / 2, B_HEIGHT / 2);
+        g.drawString(scoreMsg, (B_WIDTH - metr.stringWidth(scoreMsg)) / 2, B_HEIGHT / 2 + 20);
     }
 
     private void checkApple() {
         SnakeSegment head = snake.get(0);
         if (head.x == apple.getX() && head.y == apple.getY()) {
-            snake.add(new SnakeSegment(0, 0)); // Dummy values; corrected in move()
+            snake.add(new SnakeSegment(0, 0)); // dummy values, fixed during move()
             apple.locateApple();
+            score.increment(); // <--- add this line
         }
     }
+
 
     private void move() {
         for (int i = snake.size() - 1; i > 0; i--) {
