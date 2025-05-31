@@ -14,6 +14,7 @@ import static org.example.GameConstants.*;
 public class Board extends JPanel implements ActionListener {
 
     private List<Obstacle> obstacles = new ArrayList<>();
+    protected boolean gameStarted = false;
     private final int NUM_OBSTACLES = 10;
     protected boolean directionChanged = false;
 
@@ -34,7 +35,7 @@ public class Board extends JPanel implements ActionListener {
 
 
     private Apple apple;
-    private Timer timer;
+    protected Timer timer;
 
     private Image ball = GameImages.loadImage("/dot.png");
     private Image appleImg = GameImages.loadImage("/apple.png");
@@ -65,6 +66,8 @@ public class Board extends JPanel implements ActionListener {
         apple.locateApple(snake, obstacles);
         timer = new Timer(DELAY, this);
         timer.start();
+        timer.stop(); // Pause immediately
+
     }
 
     private void generateObstacles() {
@@ -127,6 +130,16 @@ public class Board extends JPanel implements ActionListener {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         if (inGame) {
+            if (!gameStarted) {
+                String msg = "Press Arrow Key to Start";
+                Font font = new Font("Helvetica", Font.BOLD, 14);
+                FontMetrics metr = getFontMetrics(font);
+
+                g.setColor(Color.white);
+                g.setFont(font);
+                g.drawString(msg, (B_WIDTH - metr.stringWidth(msg)) / 2, B_HEIGHT / 2);
+            }
+
             g.drawImage(appleImg, apple.getX(), apple.getY(), this);
             for (int i = 0; i < snake.size(); i++) {
                 SnakeSegment s = snake.get(i);

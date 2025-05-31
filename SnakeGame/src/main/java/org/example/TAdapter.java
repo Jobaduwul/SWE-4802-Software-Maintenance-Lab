@@ -12,10 +12,15 @@ public class TAdapter extends KeyAdapter {
 
     @Override
     public void keyPressed(KeyEvent e) {
-        if (board.directionChanged) return; // ← Fix here
+        if (!board.gameStarted) {
+            board.gameStarted = true;
+            board.timer.start(); // Start the game
+        }
+
+        if (board.directionChanged) return;
 
         int key = e.getKeyCode();
-        Direction current = board.getDirection(); // ← Use getter
+        Direction current = board.getDirection();
 
         switch (key) {
             case KeyEvent.VK_LEFT:
@@ -44,4 +49,5 @@ public class TAdapter extends KeyAdapter {
                 break;
         }
     }
+
 }
