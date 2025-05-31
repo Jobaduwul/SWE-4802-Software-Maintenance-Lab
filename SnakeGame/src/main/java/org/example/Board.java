@@ -60,7 +60,8 @@ public class Board extends JPanel implements ActionListener {
 
         score.reset();
         apple = new Apple();
-        generateObstacles(); // <<--- Add this
+        generateObstacles();
+        apple.locateApple(snake, obstacles);
         timer = new Timer(DELAY, this);
         timer.start();
     }
@@ -160,7 +161,7 @@ public class Board extends JPanel implements ActionListener {
         SnakeSegment head = snake.get(0);
         if (head.x == apple.getX() && head.y == apple.getY()) {
             snake.add(new SnakeSegment(0, 0)); // dummy values, fixed during move()
-            apple.locateApple();
+            apple.locateApple(snake, obstacles); // prevent apple from spawning inside anything
             score.increment(); // <--- add this line
         }
     }
