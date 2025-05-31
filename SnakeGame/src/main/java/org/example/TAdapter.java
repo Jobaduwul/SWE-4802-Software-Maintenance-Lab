@@ -12,9 +12,11 @@ public class TAdapter extends KeyAdapter {
 
     @Override
     public void keyPressed(KeyEvent e) {
-        if (!board.gameStarted) {
-            board.gameStarted = true;
-            board.timer.start(); // Start the game
+        GameStateManager gsm = board.getGameStateManager();
+
+        if (!gsm.isGameStarted()) {
+            gsm.setGameStarted(true);
+            gsm.getTimer().start();
         }
 
         if (board.directionChanged) return;
@@ -26,28 +28,23 @@ public class TAdapter extends KeyAdapter {
             case KeyEvent.VK_LEFT:
                 if (current != Direction.RIGHT) {
                     board.setDirection(Direction.LEFT);
-                    board.directionChanged = true;
                 }
                 break;
             case KeyEvent.VK_RIGHT:
                 if (current != Direction.LEFT) {
                     board.setDirection(Direction.RIGHT);
-                    board.directionChanged = true;
                 }
                 break;
             case KeyEvent.VK_UP:
                 if (current != Direction.DOWN) {
                     board.setDirection(Direction.UP);
-                    board.directionChanged = true;
                 }
                 break;
             case KeyEvent.VK_DOWN:
                 if (current != Direction.UP) {
                     board.setDirection(Direction.DOWN);
-                    board.directionChanged = true;
                 }
                 break;
         }
     }
-
 }

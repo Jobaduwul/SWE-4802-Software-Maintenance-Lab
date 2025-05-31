@@ -1,185 +1,80 @@
 package org.example;
 
-import java.util.HashSet;
-import java.util.Set;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.example.GameConstants.*;
 
-public class Board extends JPanel implements ActionListener {
+public class Board extends JPanel implements java.awt.event.ActionListener {
 
-    private List<Obstacle> obstacles = new ArrayList<>();
-    protected boolean gameStarted = false;
-    private final int NUM_OBSTACLES = 10;
+    private final List<SnakeSegment> snake = new ArrayList<>();
+    private final Score score = new Score();
+    private final ObstacleManager obstacleManager = new ObstacleManager();
+    private final GameRenderer renderer = new GameRenderer();
+    private final GameStateManager gameStateManager;
+    private final Image ball = GameImages.loadImage("/dot.png");
+    private final Image appleImg = GameImages.loadImage("/apple.png");
+    private final Image head = GameImages.loadImage("/head.png");
+    private final Image obstacleImg = GameImages.loadImage("/obstacle.png");
+
+    private final Apple apple = new Apple();
+    private Direction direction = Direction.RIGHT;
     protected boolean directionChanged = false;
 
-
-    private Image obstacleImg = GameImages.loadImage("/ob" +
-            "stacle.png");
-    private List<SnakeSegment> snake;
-
-    private Direction direction = Direction.RIGHT;
-
-    private boolean inGame = true;
-
-    private Score score = new Score();
-    private static final int SCORE_OFFSET_X = 70;
-    private static final int SCORE_OFFSET_Y = 10;
-
-
-
-
-    private Apple apple;
-    protected Timer timer;
-
-    private Image ball = GameImages.loadImage("/dot.png");
-    private Image appleImg = GameImages.loadImage("/apple.png");
-    private Image head = GameImages.loadImage("/head.png");
-
     public Board() {
-        initBoard();
-    }
-
-    private void initBoard() {
-        addKeyListener(new TAdapter(this));
-        setBackground(Color.black);
         setFocusable(true);
+        setBackground(Color.black);
         setPreferredSize(new Dimension(B_WIDTH, B_HEIGHT));
-
+        addKeyListener(new TAdapter(this));
         initGame();
+        gameStateManager = new GameStateManager(DELAY, this);
     }
+    public GameStateManager getGameStateManager() {
+        return gameStateManager;
+    }
+
 
     private void initGame() {
-        snake = new ArrayList<>();
+        snake.clear();
         for (int i = 0; i < 3; i++) {
             snake.add(new SnakeSegment(50 - i * DOT_SIZE, 50));
         }
 
         score.reset();
-        apple = new Apple();
-        generateObstacles();
-        apple.locateApple(snake, obstacles);
-        timer = new Timer(DELAY, this);
-        timer.start();
-        timer.stop(); // Pause immediately
-
+        obstacleManager.getObstacles().clear();
+        obstacleManager.generateObstacles(snake, apple);
+        apple.locateApple(snake, obstacleManager.getObstacles());
     }
-
-    private void generateObstacles() {
-        Set<String> used = new HashSet<>();
-        for (SnakeSegment s : snake) used.add(s.x + "," + s.y);
-        // Shapes list, you can add more shapes here
-        List<List<Point>> shapes = List.of(
-                List.of(new Point(0, 0), new Point(DOT_SIZE, 0), new Point(0, DOT_SIZE)),             // L shape
-                List.of(new Point(0, 0), new Point(-DOT_SIZE, 0), new Point(0, DOT_SIZE)),            // reverse L
-                List.of(new Point(0, 0), new Point(0, DOT_SIZE), new Point(0, 2 * DOT_SIZE)),         // vertical line
-                List.of(new Point(0, 0), new Point(DOT_SIZE, 0), new Point(2 * DOT_SIZE, 0)),         // horizontal line
-                List.of(new Point(0, 0), new Point(DOT_SIZE, 0), new Point(0, DOT_SIZE), new Point(DOT_SIZE, DOT_SIZE)) // square
-        );
-
-        int attempts = 0;
-        int shapesPlaced = 0;
-
-        while (shapesPlaced < NUM_OBSTACLES && attempts < 100) {
-            attempts++;
-
-            List<Point> shape = shapes.get((int) (Math.random() * shapes.size()));
-
-            int anchorX = ((int) (Math.random() * RAND_POS)) * DOT_SIZE;
-            int anchorY = ((int) (Math.random() * RAND_POS)) * DOT_SIZE;
-
-            List<Point> absolutePoints = new ArrayList<>();
-            boolean valid = true;
-
-            for (Point p : shape) {
-                int x = anchorX + p.x;
-                int y = anchorY + p.y;
-
-                if (x < 0 || y < 0 || x >= B_WIDTH || y >= B_HEIGHT) {
-                    valid = false;
-                    break;
-                }
-
-                String key = x + "," + y;
-                if (used.contains(key) || (x == apple.getX() && y == apple.getY())) {
-                    valid = false;
-                    break;
-                }
-
-                absolutePoints.add(new Point(x, y));
-            }
-
-            if (valid) {
-                for (Point pt : absolutePoints) {
-                    obstacles.add(new Obstacle(pt.x, pt.y));
-                    used.add(pt.x + "," + pt.y);
-                }
-                shapesPlaced++;
-            }
-        }
-    }
-
-
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        if (inGame) {
-            if (!gameStarted) {
-                String msg = "Press Arrow Key to Start";
-                Font font = new Font("Helvetica", Font.BOLD, 14);
-                FontMetrics metr = getFontMetrics(font);
 
-                g.setColor(Color.white);
-                g.setFont(font);
-                g.drawString(msg, (B_WIDTH - metr.stringWidth(msg)) / 2, B_HEIGHT / 2);
+        if (gameStateManager.isInGame()) {
+            if (!gameStateManager.isGameStarted()) {
+                renderer.drawStartMessage(g);
+            } else {
+                renderer.renderGame(g, snake, apple, obstacleManager.getObstacles(),
+                        head, ball, appleImg, obstacleImg, score);
             }
-
-            g.drawImage(appleImg, apple.getX(), apple.getY(), this);
-            for (int i = 0; i < snake.size(); i++) {
-                SnakeSegment s = snake.get(i);
-                g.drawImage(i == 0 ? head : ball, s.x, s.y, this);
-            }
-            for (Obstacle obs : obstacles) {
-                g.drawImage(obstacleImg, obs.getX(), obs.getY(), this);
-            }
-            g.setColor(Color.WHITE);
-            g.setFont(new Font("Arial", Font.PLAIN, 14));
-            String scoreText = "Score: " + score.getScore();
-            g.drawString(scoreText, B_WIDTH - SCORE_OFFSET_X, B_HEIGHT - SCORE_OFFSET_Y);
-
-            Toolkit.getDefaultToolkit().sync();
         } else {
-            gameOver(g);
+            renderer.drawGameOver(g, score.getScore());
         }
-    }
 
-    private void gameOver(Graphics g) {
-        String msg = "Game Over";
-        String scoreMsg = "Final Score: " + score.getScore();
-        Font small = new Font("Helvetica", Font.BOLD, 14);
-        FontMetrics metr = getFontMetrics(small);
-
-        g.setColor(Color.white);
-        g.setFont(small);
-        g.drawString(msg, (B_WIDTH - metr.stringWidth(msg)) / 2, B_HEIGHT / 2);
-        g.drawString(scoreMsg, (B_WIDTH - metr.stringWidth(scoreMsg)) / 2, B_HEIGHT / 2 + 20);
+        Toolkit.getDefaultToolkit().sync();
     }
 
     private void checkApple() {
         SnakeSegment head = snake.get(0);
         if (head.x == apple.getX() && head.y == apple.getY()) {
-            snake.add(new SnakeSegment(0, 0)); // dummy values, fixed during move()
-            apple.locateApple(snake, obstacles); // prevent apple from spawning inside anything
-            score.increment(); // <--- add this line
+            snake.add(new SnakeSegment(0, 0)); // dummy segment
+            apple.locateApple(snake, obstacleManager.getObstacles());
+            score.increment();
         }
     }
-
 
     private void move() {
         for (int i = snake.size() - 1; i > 0; i--) {
@@ -198,34 +93,20 @@ public class Board extends JPanel implements ActionListener {
 
     private void checkCollision() {
         SnakeSegment head = snake.get(0);
-
-        for (int i = 4; i < snake.size(); i++) {
-            SnakeSegment s = snake.get(i);
-            if (head.x == s.x && head.y == s.y) inGame = false;
+        if (CollisionUtil.isSnakeSelfColliding(snake)
+                || CollisionUtil.isOutOfBounds(head)
+                || CollisionUtil.isObstacleCollision(head, obstacleManager.getObstacles())) {
+            gameStateManager.setInGame(false);
         }
-
-        if (head.x < 0 || head.x >= B_WIDTH || head.y < 0 || head.y >= B_HEIGHT) {
-            inGame = false;
-        }
-
-        for (Obstacle obs : obstacles) {
-            if (head.x == obs.getX() && head.y == obs.getY()) {
-                inGame = false;
-                break;
-            }
-        }
-
-        if (!inGame) timer.stop();
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (inGame) {
+        if (gameStateManager.isInGame()) {
             checkApple();
             checkCollision();
             move();
             directionChanged = false;
-
         }
         repaint();
     }
@@ -235,6 +116,12 @@ public class Board extends JPanel implements ActionListener {
     }
 
     public void setDirection(Direction direction) {
-        this.direction = direction;
+        if (!directionChanged) {
+            this.direction = direction;
+            directionChanged = true;
+            if (!gameStateManager.isGameStarted()) {
+                gameStateManager.setGameStarted(true);
+            }
+        }
     }
 }
