@@ -16,4 +16,9 @@
          <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 
+    <properties>
+        <sonar.organization>jobaduwul</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+    </properties>
+
 </project>
